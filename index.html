@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>福瑞斯特中小學 - 點心訂餐系統</title>
+    <style>
+        body { font-family: 'Microsoft JhengHei', sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a73e8; margin-bottom: 10px; }
+        .desc { font-size: 15px; color: #5f6368; line-height: 1.6; margin-bottom: 25px; background: #fffbe6; padding: 15px; border-radius: 8px; border: 1px solid #ffe58f; }
+        
+        /* 菜單圖片區塊 */
+        .menu-section { text-align: center; margin-bottom: 30px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .menu-section h3 { margin-top: 0; font-size: 18px; color: #444; }
+        .menu-img { max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .form-group { margin-bottom: 25px; }
+        .form-group b { display: block; margin-bottom: 8px; font-size: 16px; }
+        
+        input[type="text"] { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #dfe1e5; border-radius: 8px; box-sizing: border-box; transition: border 0.3s; }
+        input[type="text"]:focus { border-color: #1a73e8; outline: none; }
+
+        /* 學生資訊顯示區 */
+        .info-box { background: #e8f0fe; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #1a73e8; }
+        .info-box span { display: block; font-size: 17px; margin-bottom: 8px; font-weight: bold; }
+        .note-red { color: #d93025; font-size: 18px; }
+
+        /* 選項區塊 */
+        .radio-group { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+        label { margin-right: 20px; font-size: 16px; cursor: pointer; }
+        input[type="radio"] { transform: scale(1.2); margin-right: 5px; }
+
+        button { width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background-color: #34a853; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #2d8e47; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .footer-note { text-align: center; font-size: 12px; color: #999; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>新北市福瑞斯特高級中學國小部</h2>
+    <div style="text-align:center; font-weight:bold; font-size:20px; margin-bottom:15px;">五月份點心訂購單</div>
+    
+    <div class="desc">
+        親愛的家長您好：<br>
+        為了解孩子們對於下午點心的需求與意願，請您協助填寫勾選，以便我們能夠更好地安排下午點心的服務。下午點心時間為：15:40~15:55，感謝您的配合與支持！
+    </div>
+
+    <div class="menu-section">
+        <h3>📅 五月份點心菜單預覽</h3>
+        <img src="menu.jpg" alt="請上傳命名為 menu.jpg 的圖片" class="menu-img">
+    </div>
+
+    <div class="form-group">
+        <b>輸入班級座號：</b>
+        <input type="text" id="student_id" placeholder="例如：50101 (輸入後點擊空白處)" onblur="searchStudent()">
+    </div>
+
+    <div class="info-box">
+        <span id="display_name">學生姓名：(等待輸入...)</span>
+        <span id="display_note" class="note-red">學生的飲食備註：(等待輸入...)</span>
+    </div>
+
+    <div class="form-group">
+        <b>(1) 是否訂購當月的點心？</b>
+        <div class="radio-group">
+            <label><input type="radio" name="order" value="是"> 是</label>
+            <label><input type="radio" name="order" value="否"> 否</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <b>(2) 點心餐點：</b>
+        <div class="radio-group">
+            <label><input type="radio" name="type" value="葷" checked> 葷</label>
+            <label><input type="radio" name="type" value="素"> 素</label>
+        </div>
+    </div>
+
+    <button onclick="submitData()" id="submitBtn">確認送出報名資料</button>
+    
+    <div class="footer-note">製作人：TATA版本</div>
+</div>
+
+<script>
+    // ⚠️ 這裡請填入你在 Google Apps Script 部署後得到的「網頁應用程式網址」
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzANxRbt7gHmuZR7G2icmjz9pPBntH1A2Esg5Q8YNL-VBvwju5aF4hpEZ5q5ZTalhNE/exec";
+    
+    let studentData = {};
+
+    // 頁面開啟時自動向 Google 抓取最新的名單
+    window.onload = function() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "系統資料同步中...";
+        btn.disabled = true;
+
+        fetch(GOOGLE_API_URL + "?action=getStudents")
+            .then(res => res.json())
+            .then(data => {
+                studentData = data;
+                btn.innerText = "確認送出報名資料";
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error(err);
+                alert("無法連線至資料庫，請檢查網路或 API 網址設定");
+            });
+    }
+
+    // 搜尋功能
+    function searchStudent() {
+        const id = document.getElementById('student_id').value.trim();
+        const nameEl = document.getElementById('display_name');
+        const noteEl = document.getElementById('display_note');
+
+        if (studentData[id]) {
+            nameEl.innerText = "學生姓名：" + studentData[id].name;
+            noteEl.innerText = "學生的飲食備註：" + studentData[id].note;
+        } else if (id !== "") {
+            nameEl.innerText = "學生姓名：(查無此座號)";
+            noteEl.innerText = "學生的飲食備註：(請檢查輸入是否正確)";
+        }
+    }
+
+    // 送出功能
+    function submitData() {
+        const id = document.getElementById('student_id').value.trim();
+        if (!studentData[id]) {
+            alert("請先輸入正確的班級座號！");
+            return;
+        }
+
+        const orderChecked = document.querySelector('input[name="order"]:checked');
+        if (!orderChecked) {
+            alert("請勾選「是否訂購當月點心」");
+            return;
+        }
+
+        const order = orderChecked.value;
+        const type = document.querySelector('input[name="type"]:checked').value;
+        const name = studentData[id].name;
+        const note = studentData[id].note;
+        const btn = document.getElementById('submitBtn');
+
+        btn.innerText = "正在上傳資料...";
+        btn.disabled = true;
+
+        // 組裝傳送參數
+        const url = `${GOOGLE_API_URL}?action=addOrder&id=${id}&name=${encodeURIComponent(name)}&order=${encodeURIComponent(order)}&type=${encodeURIComponent(type)}&note=${encodeURIComponent(note)}`;
+
+        fetch(url)
+            .then(res => res.text())
+            .then(result => {
+                alert("【" + name + "】同學，報名資料已成功傳送！");
+                location.reload(); // 成功後自動刷新頁面
+            })
+            .catch(err => {
+                alert("傳送失敗，請稍後再試");
+                btn.innerText = "確認送出報名資料";
+                btn.disabled = false;
+            });
+    }
+</script>
+
+</body>
+</html>
