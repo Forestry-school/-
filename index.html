@@ -10,7 +10,6 @@
         h2 { text-align: center; color: #1a73e8; margin-bottom: 10px; }
         .desc { font-size: 15px; color: #5f6368; line-height: 1.6; margin-bottom: 25px; background: #fffbe6; padding: 15px; border-radius: 8px; border: 1px solid #ffe58f; }
         
-        /* 菜單圖片區塊 */
         .menu-section { text-align: center; margin-bottom: 30px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
         .menu-section h3 { margin-top: 0; font-size: 18px; color: #444; }
         .menu-img { max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -21,12 +20,10 @@
         input[type="text"] { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #dfe1e5; border-radius: 8px; box-sizing: border-box; transition: border 0.3s; }
         input[type="text"]:focus { border-color: #1a73e8; outline: none; }
 
-        /* 學生資訊顯示區 */
         .info-box { background: #e8f0fe; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #1a73e8; }
         .info-box span { display: block; font-size: 17px; margin-bottom: 8px; font-weight: bold; }
         .note-red { color: #d93025; font-size: 18px; }
 
-        /* 選項區塊 */
         .radio-group { background: #f8f9fa; padding: 15px; border-radius: 8px; }
         label { margin-right: 20px; font-size: 16px; cursor: pointer; }
         input[type="radio"] { transform: scale(1.2); margin-right: 5px; }
@@ -56,28 +53,33 @@
 
     <div class="form-group">
         <b>輸入班級座號：</b>
-        <input type="text" id="student_id" placeholder="例如：50101 (輸入後點擊空白處)" onblur="searchStudent()">
+        <input type="text" id="student_id" placeholder="例如：50101 (輸入後點擊空白處自動搜尋)" onblur="searchStudent()">
     </div>
 
     <div class="info-box">
         <span id="display_name">學生姓名：(等待輸入...)</span>
-        <span id="display_note" class="note-red">學生的飲食備註：(等待輸入...)</span>
+        <span id="display_note" class="note-red">系統飲食備註：(等待輸入...)</span>
     </div>
 
     <div class="form-group">
         <b>(1) 是否訂購當月的點心？</b>
         <div class="radio-group">
-            <label><input type="radio" name="order" value="是"> 是</label>
-            <label><input type="radio" name="order" value="否"> 否</label>
+            <label><input type="radio" name="order" value="是" onclick="toggleFoodType()"> 是</label>
+            <label><input type="radio" name="order" value="否" onclick="toggleFoodType()"> 否</label>
         </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="food_type_section" style="display: none;">
         <b>(2) 點心餐點：</b>
         <div class="radio-group">
             <label><input type="radio" name="type" value="葷" checked> 葷</label>
             <label><input type="radio" name="type" value="素"> 素</label>
         </div>
+    </div>
+
+    <div class="form-group">
+        <b>(3) 家長備註：</b>
+        <input type="text" id="parent_remark" placeholder="若有其他特別需求請填寫於此 (選填)">
     </div>
 
     <button onclick="submitData()" id="submitBtn">確認送出報名資料</button>
@@ -86,12 +88,11 @@
 </div>
 
 <script>
-    // ⚠️ 這裡請填入你在 Google Apps Script 部署後得到的「網頁應用程式網址」
+    // ⚠️ 這裡請填入你的 Apps Script 網址
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzANxRbt7gHmuZR7G2icmjz9pPBntH1A2Esg5Q8YNL-VBvwju5aF4hpEZ5q5ZTalhNE/exec";
     
     let studentData = {};
 
-    // 頁面開啟時自動向 Google 抓取最新的名單
     window.onload = function() {
         const btn = document.getElementById('submitBtn');
         btn.innerText = "系統資料同步中...";
@@ -110,7 +111,6 @@
             });
     }
 
-    // 搜尋功能
     function searchStudent() {
         const id = document.getElementById('student_id').value.trim();
         const nameEl = document.getElementById('display_name');
@@ -118,14 +118,25 @@
 
         if (studentData[id]) {
             nameEl.innerText = "學生姓名：" + studentData[id].name;
-            noteEl.innerText = "學生的飲食備註：" + studentData[id].note;
+            noteEl.innerText = "系統飲食備註：" + studentData[id].note;
         } else if (id !== "") {
             nameEl.innerText = "學生姓名：(查無此座號)";
-            noteEl.innerText = "學生的飲食備註：(請檢查輸入是否正確)";
+            noteEl.innerText = "系統飲食備註：(請檢查輸入是否正確)";
         }
     }
 
-    // 送出功能
+    // 控制葷素選項顯示或隱藏的函數
+    function toggleFoodType() {
+        const orderChecked = document.querySelector('input[name="order"]:checked');
+        const foodTypeSection = document.getElementById('food_type_section');
+        
+        if (orderChecked && orderChecked.value === '是') {
+            foodTypeSection.style.display = 'block'; // 選「是」就顯示
+        } else {
+            foodTypeSection.style.display = 'none';  // 選「否」就隱藏
+        }
+    }
+
     function submitData() {
         const id = document.getElementById('student_id').value.trim();
         if (!studentData[id]) {
@@ -140,22 +151,29 @@
         }
 
         const order = orderChecked.value;
-        const type = document.querySelector('input[name="type"]:checked').value;
+        
+        // 判斷葷素：如果有訂購才去抓葷素，沒訂購就預設寫「無」
+        let type = "無";
+        if (order === '是') {
+            type = document.querySelector('input[name="type"]:checked').value;
+        }
+        
         const name = studentData[id].name;
         const note = studentData[id].note;
+        const remark = document.getElementById('parent_remark').value.trim(); // 抓取家長備註
         const btn = document.getElementById('submitBtn');
 
         btn.innerText = "正在上傳資料...";
         btn.disabled = true;
 
-        // 組裝傳送參數
-        const url = `${GOOGLE_API_URL}?action=addOrder&id=${id}&name=${encodeURIComponent(name)}&order=${encodeURIComponent(order)}&type=${encodeURIComponent(type)}&note=${encodeURIComponent(note)}`;
+        // 將家長備註 (remark) 加入傳送參數中
+        const url = `${GOOGLE_API_URL}?action=addOrder&id=${id}&name=${encodeURIComponent(name)}&order=${encodeURIComponent(order)}&type=${encodeURIComponent(type)}&note=${encodeURIComponent(note)}&remark=${encodeURIComponent(remark)}`;
 
         fetch(url)
             .then(res => res.text())
             .then(result => {
                 alert("【" + name + "】同學，報名資料已成功傳送！");
-                location.reload(); // 成功後自動刷新頁面
+                location.reload(); 
             })
             .catch(err => {
                 alert("傳送失敗，請稍後再試");
